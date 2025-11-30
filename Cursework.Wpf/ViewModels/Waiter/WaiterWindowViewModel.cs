@@ -1,12 +1,16 @@
 ﻿// Project/Cursework.Wpf/ViewModels/Waiter/WaiterWindowViewModel.cs
 using Cursework.Application.Interfaces;
+using Cursework.Application.Realtime;
 using Cursework.Domains.Models;
 using Cursework.Wpf.Models.HallLayout;
 using Cursework.Wpf.Services.HallLayout;
+using Cursework.Wpf.Services.Realtime;
 using Cursework.Wpf.ViewModels.Base;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -17,6 +21,8 @@ namespace Cursework.Wpf.ViewModels.Waiter
     {
         private readonly ITableService _tableService;
         private readonly IHallLayoutStorageService _layoutStorage;
+        private readonly ICallWaiterService _callWaiterService;
+        private readonly IRealtimeService _realtime;
 
         private readonly List<DiningTable> _allTables = new();
 
@@ -25,10 +31,14 @@ namespace Cursework.Wpf.ViewModels.Waiter
 
         public WaiterWindowViewModel(
             ITableService tableService,
-            IHallLayoutStorageService layoutStorage)
+            IHallLayoutStorageService layoutStorage,
+            ICallWaiterService callWaiterService,
+            IRealtimeService realtime)
         {
             _tableService = tableService;
             _layoutStorage = layoutStorage;
+            _callWaiterService = callWaiterService;
+            _realtime = realtime;
 
             // стартовая зона — основной зал
             _selectedZone = "MainHall";
@@ -41,6 +51,9 @@ namespace Cursework.Wpf.ViewModels.Waiter
             OpenOrderCommand = new RelayCommand(_ => OpenOrder(), _ => HasSelectedTable);
             MarkItemsServedCommand = new RelayCommand(_ => MarkItemsServed(), _ => HasSelectedTable);
             CloseOrderCommand = new RelayCommand(_ => CloseOrder(), _ => HasSelectedTable);
+
+            Notifications.CollectionChanged += OnNotificationsCollectionChanged;
+            _realtime.CallWaiterChanged += OnCallWaiterChanged;
         }
 
         #region PUBLIC API
@@ -53,6 +66,8 @@ namespace Cursework.Wpf.ViewModels.Waiter
         {
             await LoadTablesAsync();
             LoadZoneLayout();
+
+            await LoadNotificationsAsync();
         }
 
         #endregion
@@ -234,6 +249,18 @@ namespace Cursework.Wpf.ViewModels.Waiter
             set => Set(ref _selectedNotification, value);
         }
 
+        private async Task LoadNotificationsAsync()
+        {
+            Notifications.Clear();
+
+            var list = await _callWaiterService.GetAllAsync();
+
+            foreach (var cw in list.OrderByDescending(c => c.CreatedAt))
+                Notifications.Add(ToNotification(cw));
+
+            Raise(nameof(UnreadNotificationsCount));
+        }
+
         #endregion
 
         #region Commands
@@ -324,6 +351,107 @@ namespace Cursework.Wpf.ViewModels.Waiter
                         Raise(nameof(IsRead));
                 }
             }
+        }
+
+        #endregion
+
+        #region Notifications helpers
+
+        private WaiterNotificationItem ToNotification(CallWaiter callWaiter)
+        {
+            var tableName = _allTables.FirstOrDefault(t => t.Id == callWaiter.TableId)?.Name
+                            ?? $"Стол #{callWaiter.TableId}";
+
+            var title = callWaiter.Type switch
+            {
+                "Call" => "Вызов официанта",
+                "AcceptPreorder" => "Принять предзаказ",
+                _ => callWaiter.Type
+            };
+
+            return new WaiterNotificationItem
+            {
+                Id = callWaiter.Id,
+                Title = $"{tableName} — {title}",
+                Message = callWaiter.IsHandled ? "Обработано" : "Требует внимания",
+                CreatedAt = callWaiter.CreatedAt,
+                IsRead = callWaiter.IsHandled
+            };
+        }
+
+        private void OnNotificationsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.NewItems != null)
+            {
+                foreach (var item in e.NewItems.OfType<WaiterNotificationItem>())
+                    item.PropertyChanged += NotificationPropertyChanged;
+            }
+
+            if (e.OldItems != null)
+            {
+                foreach (var item in e.OldItems.OfType<WaiterNotificationItem>())
+                    item.PropertyChanged -= NotificationPropertyChanged;
+            }
+
+            Raise(nameof(UnreadNotificationsCount));
+        }
+
+        private void NotificationPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(WaiterNotificationItem.IsRead))
+                Raise(nameof(UnreadNotificationsCount));
+        }
+
+        private void OnCallWaiterChanged(CallWaiterChangedDto dto)
+        {
+            if (dto.CallWaiter == null)
+                return;
+
+            RunOnUi(() =>
+            {
+                var existing = Notifications.FirstOrDefault(n => n.Id == dto.CallWaiter.Id);
+
+                switch (dto.Action)
+                {
+                    case EntityChangeAction.Created:
+                        if (existing == null)
+                            Notifications.Insert(0, ToNotification(dto.CallWaiter));
+                        else
+                        {
+                            var idx = Notifications.IndexOf(existing);
+                            Notifications[idx] = ToNotification(dto.CallWaiter);
+                        }
+                        break;
+
+                    case EntityChangeAction.Updated:
+                        if (existing != null)
+                        {
+                            var idx = Notifications.IndexOf(existing);
+                            Notifications[idx] = ToNotification(dto.CallWaiter);
+                        }
+                        else
+                        {
+                            Notifications.Insert(0, ToNotification(dto.CallWaiter));
+                        }
+                        break;
+
+                    case EntityChangeAction.Deleted:
+                        if (existing != null)
+                            Notifications.Remove(existing);
+                        break;
+                }
+
+                Raise(nameof(UnreadNotificationsCount));
+            });
+        }
+
+        private static void RunOnUi(Action action)
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+                action();
+            else
+                dispatcher.Invoke(action);
         }
 
         #endregion

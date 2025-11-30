@@ -69,6 +69,7 @@
                     <Thumb DragDelta="TableThumb_DragDelta"
                            PreviewMouseLeftButtonDown="TableThumb_PreviewMouseLeftButtonDown"
                            PreviewMouseRightButtonDown="TableThumb_PreviewMouseRightButtonDown"
+                           ContextMenuOpening="TableThumb_ContextMenuOpening"
                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
 
                         <!-- ContextMenu: DataContext = стол, по которому кликнули -->

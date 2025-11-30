@@ -3,7 +3,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:Cursework.Wpf.Views.Controls"
-        xmlns:conv="clr-namespace:Cursework.Wpf.Converters"
+        xmlns:conv="clr-namespace:Cursework.Wpf.Converters;assembly=Cursework.Wpf"
         Title="Рабочее место официанта"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
@@ -13,8 +13,6 @@
         <conv:StatusToRussianConverter x:Key="StatusToRu"/>
         <conv:OrderItemStatusToRussianConverter x:Key="OrderItemStatusToRu"/>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
-        <conv:HalfValueConverter x:Key="HalfValue"/>
-        <conv:StringNullOrEmptyToVisibilityConverter x:Key="TextToVisibility"/>
     </Window.Resources>
 
     <Grid Margin="16">
@@ -163,7 +161,7 @@
                                             CornerRadius="10">
                                         <StackPanel>
                                             <Button Content="{Binding TableName}"
-                                                    Style="{StaticResource Button.Link}"
+                                                    Style="{StaticResource Button.Outline}"
                                                     HorizontalAlignment="Left"
                                                     Command="{Binding DataContext.OpenNotificationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"/>
@@ -242,12 +240,10 @@
                                   HorizontalAlignment="Center"
                                   VerticalAlignment="Center"
                                   RenderTransformOrigin="0.5,0.5">
-                                <Grid.LayoutTransform>
+                                <Grid.RenderTransform>
                                     <ScaleTransform ScaleX="{Binding Zoom}"
-                                                    ScaleY="{Binding Zoom}"
-                                                    CenterX="{Binding ActualWidth, ElementName=MapContainer, Converter={StaticResource HalfValue}}"
-                                                    CenterY="{Binding ActualHeight, ElementName=MapContainer, Converter={StaticResource HalfValue}}"/>
-                                </Grid.LayoutTransform>
+                                                    ScaleY="{Binding Zoom}"/>
+                                </Grid.RenderTransform>
 
                                 <Grid>
                                     <!-- MainHall -->
@@ -367,8 +363,23 @@
                                 BorderThickness="1"
                                 Padding="16"
                                 HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Visibility="{Binding LayoutMessage, Converter={StaticResource TextToVisibility}}">
+                                VerticalAlignment="Center">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding LayoutMessage}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding LayoutMessage}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding LayoutMessage}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
                             <TextBlock Text="{Binding LayoutMessage}"
                                        Style="{StaticResource H3}"/>
                         </Border>

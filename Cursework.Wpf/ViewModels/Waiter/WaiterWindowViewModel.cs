@@ -68,9 +68,6 @@ namespace Cursework.Wpf.ViewModels.Waiter
             SaveOrderStatusCommand = new RelayCommand(async _ => await UpdateOrderStatusAsync(), _ => HasActiveOrder);
             UpdateItemStatusCommand = new RelayCommand(async param => await UpdateItemStatusAsync(param as WaiterOrderItem), param => param is WaiterOrderItem);
 
-            OpenOrderCommand = new RelayCommand(_ => OpenOrder(), _ => HasSelectedTable);
-            MarkItemsServedCommand = new RelayCommand(_ => MarkItemsServed(), _ => HasSelectedTable);
-            CloseOrderCommand = new RelayCommand(_ => CloseOrder(), _ => HasSelectedTable);
         }
 
         #region PUBLIC API

@@ -6,6 +6,7 @@
     <Color x:Key="Clr.Background">#FFF7F8FA</Color>
     <Color x:Key="Clr.Surface">#FFFFFFFF</Color>
     <Color x:Key="Clr.SurfaceAlt">#FFF3F4F7</Color>
+    <Color x:Key="Clr.SurfaceElevated">#FFFFFFFF</Color>
     <Color x:Key="Clr.Border">#1A2B3340</Color>
     <Color x:Key="Clr.Primary">#FF2D7EF7</Color>
     <Color x:Key="Clr.PrimaryHover">#FF1F6AE0</Color>
@@ -78,6 +79,7 @@
     <!-- Кисти -->
     <SolidColorBrush x:Key="Brush.Background" Color="{StaticResource Clr.Background}"/>
     <SolidColorBrush x:Key="Brush.Surface" Color="{StaticResource Clr.Surface}"/>
+    <SolidColorBrush x:Key="Brush.SurfaceElevated" Color="{StaticResource Clr.SurfaceElevated}"/>
     <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="{StaticResource Clr.SurfaceAlt}"/>
     <SolidColorBrush x:Key="Brush.Border" Color="{StaticResource Clr.Border}"/>
     <SolidColorBrush x:Key="Brush.Primary" Color="{StaticResource Clr.Primary}"/>
@@ -135,6 +137,9 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!-- ========= Эффекты теней ========= -->
+    <DropShadowEffect x:Key="Shadow.Medium" BlurRadius="12" ShadowDepth="0" Opacity="0.12"/>
 
     <!-- ========= Кнопки ========= -->
     <Style x:Key="Button.Base" TargetType="Button">

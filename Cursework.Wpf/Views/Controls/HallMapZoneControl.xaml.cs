@@ -62,6 +62,15 @@ namespace Cursework.Wpf.Views.Controls
             set => SetValue(IsDragEnabledProperty, value);
         }
 
+        public static readonly DependencyProperty IsReadOnlyProperty =
+            DependencyProperty.Register(nameof(IsReadOnly), typeof(bool), typeof(HallMapZoneControl), new PropertyMetadata(false));
+
+        public bool IsReadOnly
+        {
+            get => (bool)GetValue(IsReadOnlyProperty);
+            set => SetValue(IsReadOnlyProperty, value);
+        }
+
         private void TableThumb_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is Thumb t)
@@ -73,12 +82,20 @@ namespace Cursework.Wpf.Views.Controls
         {
             if (sender is Thumb t)
                 SelectedItem = t.DataContext;
-            // НЕ e.Handled=true — иначе ContextMenu может не открыться.
+            if (IsReadOnly)
+                e.Handled = true;
+        }
+
+        private void TableThumb_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (IsReadOnly)
+                e.Handled = true;
         }
 
         private void TableThumb_DragDelta(object sender, DragDeltaEventArgs e)
         {
             if (!IsDragEnabled) return;
+            if (IsReadOnly) return;
             if (sender is not Thumb thumb) return;
 
             var item = thumb.DataContext;
